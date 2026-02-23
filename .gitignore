@@ -1,0 +1,11 @@
+# Secret Environment Variables
+.env
+
+# Agent Memory Database (Don't upload the intern's brain!)
+*.h5
+agent_memory.h5
+
+# Python Caches & Virtual Environments
+__pycache__/
+venv/
+.venv/
