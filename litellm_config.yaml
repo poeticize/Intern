@@ -1,0 +1,26 @@
+model_list:
+  - model_name: ollama_chat/qwen2.5-coder:7b
+    litellm_params:
+      model: ollama_chat/qwen2.5-coder:7b
+      api_base: "http://10.10.0.10:11434" # The internal IP of the Ollama service
+
+litellm_settings:
+  # Telemetry: Drop a local log file of every single API call and its token cost
+  success_callback: ["local_debugging"]
+  failure_callback: ["local_debugging"]
+
+router_settings:
+  # THE KILL SWITCHES & THROTTLES
+  
+  # 1. Requests Per Minute (RPM) Limit
+  # Forces the intern to "breathe". If it loops faster than 15 requests a minute, 
+  # the proxy cuts the connection and returns an error (triggering the Strike-3 human escalation).
+  rpm: 15 
+  
+  # 2. Tokens Per Minute (TPM) Limit
+  # Prevents massive context-window blowouts if the agent tries to read a massive log file all at once.
+  tpm: 30000 
+  
+  # 3. Timeout limits
+  # If the local Ollama engine hangs for more than 60 seconds, kill the request.
+  timeout: 60
