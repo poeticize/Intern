@@ -1,0 +1,19 @@
+[Unit]
+Description=Project Intern (Autonomous Agent Loop)
+After=network.target litellm.service
+# If the LiteLLM proxy requires a restart, restart the agent too
+Requires=litellm.service 
+
+[Service]
+User=ubuntu
+WorkingDirectory=/sandbox/Intern
+# Load the secret variables from the hidden file before starting!
+EnvironmentFile=/sandbox/Intern/.env
+# Execute the main brain loop
+ExecStart=/usr/bin/python3 /sandbox/Intern/app.py
+# If the agent crashes (or hits Strike 3 and halts), restart it 
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
