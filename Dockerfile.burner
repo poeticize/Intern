@@ -1,0 +1,14 @@
+FROM python:3.12-alpine
+
+RUN apk add --no-cache build-base libffi-dev curl && rm -rf /var/cache/apk/*
+RUN addgroup -S interngroup && adduser -S intern -G interngroup
+
+WORKDIR /sandbox
+ENV PYTHONUNBUFFERED=1 
+
+# Pre-install essential tools to prevent runtime pip installation attempts
+RUN pip install --no-cache-dir requests pandas numpy beautifulsoup4 pyyaml python-dateutil docker
+
+RUN chown -R intern:interngroup /sandbox
+USER intern
+CMD ["python3"]
