@@ -1,0 +1,21 @@
+model_list:
+  # Tier 1: Frontier API
+  - model_name: executive-synthesis
+    litellm_params:
+      model: gemini/gemini-3.1-pro
+      api_key: os.environ/GEMINI_API_KEY
+
+  # Tier 2: The 34B Workhorse (Dummy Endpoint)
+  - model_name: local-heavy
+    litellm_params:
+      model: ollama/command-r
+      api_base: http://host.docker.internal:11434
+
+  # Tier 3: The 8B Swarm (Dummy Endpoint)
+  - model_name: local-swarm
+    litellm_params:
+      model: ollama/llama3
+      api_base: http://host.docker.internal:11434
+
+router_settings:
+  routing_strategy: simple-shuffle
