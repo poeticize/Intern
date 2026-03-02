@@ -1,0 +1,34 @@
+MASTER FILE 1: Architecture Decision Record (ADR) v2.0
+Project Intern: Secure Agentic Sandbox
+
+1. Hardware & Hypervisor
+Host Machine: HP Laptop (Redundant power via battery + external UPS).
+
+Compute & Memory: RTX 4060 (8GB VRAM). Usable System RAM: ~32GB.
+
+Storage: Dual 2TB NVMe drives configured in a ZFS Mirror (RAID 1) for immediate fault tolerance.
+
+Hypervisor: Bare-metal Proxmox VE.
+
+2. The Sandbox (KVM Isolation)
+Environment: Ubuntu 24.04 KVM Virtual Machine. (Pivoted from LXC to prevent shared-kernel exploits).
+
+Hardware Access: PCIe VFIO Passthrough for the RTX 4060 GPU.
+
+Inference Engine: Ollama running quantized SLMs (Qwen 2.5 Coder 7B or Phi-4).
+
+3. Network Topology & Telemetry
+Edge Network (vmbr0): Physical LAN.
+
+AI Subnet (vmbr1): Host-only DMZ. Default DROP firewall policy.
+
+Zero-Trust Access: Tailscale installed inside the KVM VM (Port 22 SSH, authenticated via SSO).
+
+Telemetry: Netdata (Port 19999) for hardware tracking; LiteLLM Proxy (Port 4000) for token monitoring and API throttling.
+
+4. Execution & Memory Framework
+Logic Loop: smolagents CodeAgent.
+
+Ephemeral Execution: All agent-generated Python code runs inside a disposable Docker container (intern-burner-env:latest) with no internet access and strict CPU/RAM quotas.
+
+Persistent Memory: EdgeHDF5 hybrid search (Vector + BM25) stored in a single /sandbox/agent_memory.h5 file.

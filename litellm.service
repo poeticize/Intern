@@ -1,0 +1,17 @@
+[Unit]
+Description=LiteLLM Proxy Server (Intern API Gateway)
+# Wait for the network to be fully up before starting
+After=network.target 
+
+[Service]
+# Run as your standard VM user, NOT root
+User=ubuntu 
+WorkingDirectory=/sandbox/Intern
+# The command to start the proxy using our throttled config
+ExecStart=/usr/local/bin/litellm --config litellm_config.yaml --port 4000
+# If the proxy crashes, automatically restart it after 5 seconds
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

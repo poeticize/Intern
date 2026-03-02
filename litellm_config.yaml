@@ -5,17 +5,35 @@ model_list:
       model: gemini/gemini-3.1-pro
       api_key: os.environ/GEMINI_API_KEY
 
-  # Tier 2: The 34B Workhorse (Dummy Endpoint)
+  # Tier 2: The 34B Workhorse (Dummy Endpoint for now)
   - model_name: local-heavy
     litellm_params:
       model: ollama/command-r
       api_base: http://host.docker.internal:11434
 
-  # Tier 3: The 8B Swarm (Dummy Endpoint)
+  # Tier 3: The 8B Swarm (Dummy Endpoint for now)
   - model_name: local-swarm
     litellm_params:
       model: ollama/llama3
       api_base: http://host.docker.internal:11434
 
+litellm_settings:
+  # Telemetry: Drop a local log file of every single API call and its token cost
+  success_callback: ["local_debugging"]
+  failure_callback: ["local_debugging"]
+
 router_settings:
   routing_strategy: simple-shuffle
+  
+  # THE KILL SWITCHES & THROTTLES
+  # 1. Requests Per Minute (RPM) Limit
+  # Forces the intern to "breathe". 
+  rpm: 15 
+  
+  # 2. Tokens Per Minute (TPM) Limit
+  # Prevents massive context-window blowouts.
+  tpm: 30000 
+  
+  # 3. Timeout limits
+  # If the local engine hangs for more than 60 seconds, kill the request.
+  timeout: 60
